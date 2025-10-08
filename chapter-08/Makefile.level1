@@ -1,0 +1,54 @@
+# Makefile for Level 1: Make + cron orchestration
+# Chapter 8: Orchestration Progression
+
+SHELL := /bin/bash
+.ONESHELL:
+.SHELLFLAGS := -eu -o pipefail -c
+.DEFAULT_GOAL := all
+
+# Phony targets (always run, not tied to files)
+.PHONY: all extract transform quality report clean
+
+# Main pipeline
+all: report
+
+# Dependency-based execution
+data/staging/users.parquet: data/raw/users.csv scripts/clean_users.py
+	@echo "Cleaning users data..."
+	python scripts/clean_users.py \
+		--input $< \
+		--output $@ \
+		--log logs/clean_users_$(shell date +%Y%m%d_%H%M%S).log
+
+data/curated/daily_metrics.parquet: data/staging/*.parquet scripts/transform.sql
+	@echo "Computing metrics..."
+	duckdb -c ".read scripts/transform.sql" \
+		-c "COPY (SELECT * FROM metrics) TO '$@' (FORMAT PARQUET, COMPRESSION ZSTD)"
+
+# Workflow targets
+extract: data/raw/api_data.json data/raw/db_export.csv
+	@echo "[OK] Extraction complete"
+
+transform: data/curated/daily_metrics.parquet data/curated/user_cohorts.parquet
+	@echo "[OK] Transformations complete"
+
+quality: transform
+	python scripts/quality.py --data-dir data/curated
+	@echo "[OK] Quality checks passed"
+
+report: quality
+	evidence build --output docs/
+	@echo "[OK] Report generated at docs/index.html"
+
+clean:
+	rm -rf data/staging/* data/curated/* logs/*
+
+# Error handling example
+data/staging/validated.parquet: data/raw/input.csv
+	@mkdir -p logs
+	@LOG_FILE=logs/validate_$(shell date +%Y%m%d_%H%M%S).log
+	python scripts/validate.py --input $< --output $@ 2>&1 | tee $$LOG_FILE
+	@if [ $$PIPESTATUS -ne 0 ]; then \
+		echo "[FAIL] Validation failed. Check $$LOG_FILE"; \
+		exit 1; \
+	fi

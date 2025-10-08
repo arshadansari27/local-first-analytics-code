@@ -1,0 +1,60 @@
+SHELL := /bin/bash
+.ONESHELL:
+.SHELLFLAGS := -eu -o pipefail -c
+.DEFAULT_GOAL := all
+
+# Phony targets
+.PHONY: all extract clean
+
+all: data/curated/daily_revenue.parquet
+
+# Extraction layer
+data/raw/customers.csv:
+	@echo "Fetching customers from SFTP..."
+	bash scripts/fetch_customers.sh
+
+data/raw/orders.json:
+	@echo "Fetching orders from API..."
+	python scripts/fetch_orders.py
+
+data/raw/inventory.parquet:
+	@echo "Fetching inventory from MinIO..."
+	python scripts/fetch_inventory.py
+
+extract: data/raw/customers.csv data/raw/orders.json data/raw/inventory.parquet
+
+# Staging layer
+data/staging/customers.parquet: data/raw/customers.csv scripts/clean_customers.py
+	@echo "Cleaning customers..."
+	python scripts/clean_customers.py --input $< --output $@
+
+data/staging/orders.parquet: data/raw/orders.json data/staging/customers.parquet scripts/clean_orders.py
+	@echo "Cleaning orders..."
+	python scripts/clean_orders.py \
+		--orders data/raw/orders.json \
+		--customers data/staging/customers.parquet \
+		--output $@
+
+data/staging/inventory.parquet: data/raw/inventory.parquet scripts/snapshot_inventory.py
+	@echo "Snapshotting inventory..."
+	python scripts/snapshot_inventory.py --input $< --output $@
+
+# Curated layer
+data/curated/customers.parquet: data/staging/customers.parquet
+	@mkdir -p data/curated
+	cp $< $@
+
+data/curated/orders.parquet: data/staging/orders.parquet
+	@mkdir -p data/curated
+	cp $< $@
+
+data/curated/inventory_snapshot.parquet: data/staging/inventory.parquet
+	@mkdir -p data/curated
+	cp $< $@
+
+data/curated/daily_revenue.parquet: data/curated/orders.parquet scripts/compute_revenue.sql
+	@echo "Computing revenue metrics..."
+	duckdb -c ".read scripts/compute_revenue.sql"
+
+clean:
+	rm -rf data/raw/* data/staging/* data/curated/*

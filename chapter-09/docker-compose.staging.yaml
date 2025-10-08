@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  analytics:
+    volumes:
+      - ./data-staging:/workspace/data  # Staging data folder
+    environment:
+      - ENV=staging
+      - LOG_LEVEL=INFO

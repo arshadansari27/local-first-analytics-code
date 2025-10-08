@@ -1,0 +1,5 @@
+*.parquet 
+*.pdf
+*.csv
+*.gz
+README.md

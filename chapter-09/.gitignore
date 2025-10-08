@@ -1,0 +1,50 @@
+# Data directories
+data/
+data-dev/
+data-staging/
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+ENV/
+
+# DuckDB
+*.duckdb
+*.duckdb.wal
+
+# Docker
+.env
+!.env.dev
+!.env.staging
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# BI
+bi/evidence/node_modules/
+bi/evidence/.evidence/
+
+# Logs
+*.log
+
+SUMMARY.md 
+VERFICATION.md
+FILES.md

@@ -1,0 +1,15 @@
+# LakeFS Pre-Merge Hook Configuration
+# Chapter 10: Version Control for Data
+# .lakefs/hooks/pre-merge.yaml
+
+name: validate-before-merge
+on:
+  pre-merge:
+    branches:
+      - main
+
+hooks:
+  - id: schema_validation
+    type: webhook
+    properties:
+      url: http://localhost:5000/validate

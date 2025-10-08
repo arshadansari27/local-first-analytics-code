@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # ────────────────────────────────────────
+  # Evidence.dev (Reports as Code)
+  # ────────────────────────────────────────
+  evidence:
+    image: node:18-alpine
+    container_name: local-evidence
+    working_dir: /evidence
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../evidence:/evidence
+      - ../../data:/data
+    command: |
+      sh -c "
+      if [ ! -f package.json ]; then
+        echo '[INFO] Initializing Evidence project...'
+        npm init -y
+        npm install @evidence-dev/evidence
+      fi
+      npm run dev -- --host 0.0.0.0
+      "
+    networks:
+      - bi-net
+    restart: unless-stopped
+
+  # ────────────────────────────────────────
+  # Metabase (Ad-hoc Analytics)
+  # ────────────────────────────────────────
+  metabase:
+    image: metabase/metabase:latest
+    container_name: local-metabase
+    ports:
+      - "3001:3000"
+    volumes:
+      - metabase-data:/metabase-data
+      - ../../data:/data
+    environment:
+      - MB_DB_FILE=/metabase-data/metabase.db
+      - MB_SITE_URL=http://localhost:3001
+    networks:
+      - bi-net
+    restart: unless-stopped
+
+networks:
+  bi-net:
+    driver: bridge
+
+volumes:
+  metabase-data:

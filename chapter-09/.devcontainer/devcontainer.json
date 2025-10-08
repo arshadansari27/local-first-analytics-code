@@ -1,0 +1,41 @@
+{
+  "name": "Local Analytics Workspace",
+  "dockerComposeFile": "../docker-compose.yaml",
+  "service": "analytics",
+  "workspaceFolder": "/workspace",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "tamasfe.even-better-toml",
+        "evidence-dev.evidence-vscode"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python3",
+        "python.linting.enabled": true,
+        "python.linting.ruffEnabled": true,
+        "python.formatting.provider": "black",
+        "editor.formatOnSave": true,
+        "files.watcherExclude": {
+          "**/.git/objects/**": true,
+          "**/data/**": true
+        }
+      }
+    }
+  },
+
+  "forwardPorts": [3000, 4200, 9000, 9001],
+  "portsAttributes": {
+    "3000": {"label": "Evidence"},
+    "4200": {"label": "Prefect"},
+    "9000": {"label": "MinIO API"},
+    "9001": {"label": "MinIO Console"}
+  },
+
+  "postCreateCommand": "pip install -e . && echo '[OK] Dev environment ready'",
+
+  "remoteUser": "root"
+}

@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  analytics:
+    image: python:3.11-slim
+    container_name: local-analytics
+    working_dir: /workspace
+    volumes:
+      - ./data:/workspace/data
+      - ./etl:/workspace/etl
+      - ./sql:/workspace/sql
+    command: |
+      bash -c "
+      pip install --quiet duckdb polars pyarrow pandas &&
+      echo '[OK] Analytics workspace ready' &&
+      tail -f /dev/null
+      "
+    stdin_open: true
+    tty: true
+
+volumes:
+  data:

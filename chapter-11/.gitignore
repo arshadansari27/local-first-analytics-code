@@ -1,0 +1,30 @@
+# Evidence
+evidence/node_modules/
+evidence/.evidence/
+evidence/build/
+evidence/package-lock.json
+
+# Data exports
+data/curated/metabase_export/
+data/curated/metabase_export.db
+
+# Docker volumes
+metabase-data/
+
+# Node
+*.log
+npm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

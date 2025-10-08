@@ -1,0 +1,21 @@
+# DVC Pipeline Definition
+# Chapter 10: Version Control for Data
+# etl/dvc.yaml
+
+stages:
+  ingest:
+    cmd: python etl/ingest.py
+    deps:
+      - etl/ingest.py
+    outs:
+      - data/raw/sales.parquet
+  
+  transform:
+    cmd: python etl/transform.py
+    deps:
+      - etl/transform.py
+      - data/raw/sales.parquet
+    outs:
+      - data/curated/monthly_summary.parquet
+    metrics:
+      - metrics.json

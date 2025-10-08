@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  analytics:
+    image: python:3.11-slim
+    container_name: local-analytics
+    working_dir: /workspace
+    volumes:
+      - ./data:/workspace/data
+      - ./etl:/workspace/etl
+    environment:
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - AWS_ENDPOINT_URL=http://minio:9000
+    command: |
+      bash -c "
+      pip install --quiet duckdb polars pyarrow boto3 &&
+      echo '[OK] Analytics workspace ready' &&
+      tail -f /dev/null
+      "
+    depends_on:
+      - minio
+    networks:
+      - analytics-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: local-minio
+    ports:
+      - "9000:9000"  # S3 API
+      - "9001:9001"  # Web Console
+    volumes:
+      - minio-data:/data
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    networks:
+      - analytics-net
+
+networks:
+  analytics-net:
+    driver: bridge
+
+volumes:
+  minio-data:

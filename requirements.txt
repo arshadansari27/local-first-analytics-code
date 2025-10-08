@@ -1,0 +1,41 @@
+# Core stack
+duckdb>=1.0.0
+polars>=0.20.0
+pyarrow>=14.0.0
+
+# Data processing
+pandas>=2.0.0
+
+# Data quality
+pandera>=0.17.0
+
+# Orchestration
+prefect>=2.14.0
+dagster>=1.5.0
+
+# BI
+jupyter>=1.0.0
+plotly>=5.17.0
+
+# AI/ML
+ollama>=0.1.0
+llama-index>=0.9.0
+sentence-transformers>=2.2.0
+
+# Utilities
+python-dotenv>=1.0.0
+requests>=2.31.0
+tqdm>=4.66.0
+
+# Dev tools
+pytest>=7.4.0
+black>=23.11.0
+ruff>=0.1.5
+mypy>=1.7.0
+
+# Imaging (for cover generation)
+Pillow>=10.0.0
+
+# DVC
+dvc>=3.30.0
+dvc-s3>=3.0.0

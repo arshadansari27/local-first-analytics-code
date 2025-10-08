@@ -1,0 +1,24 @@
+# Generated files
+*.duckdb
+*.duckdb.wal
+quality_report.csv
+analytics.duckdb
+
+# Output directories
+staging/
+raw/
+curated/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/

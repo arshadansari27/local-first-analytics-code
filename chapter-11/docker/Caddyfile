@@ -1,0 +1,9 @@
+# Caddy Reverse Proxy Configuration
+
+evidence.yourdomain.com {
+    reverse_proxy localhost:3000
+}
+
+metabase.yourdomain.com {
+    reverse_proxy localhost:3001
+}

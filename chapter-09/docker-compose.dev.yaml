@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  analytics:
+    volumes:
+      - ./data-dev:/workspace/data  # Different data folder
+    environment:
+      - ENV=development
+      - LOG_LEVEL=DEBUG
