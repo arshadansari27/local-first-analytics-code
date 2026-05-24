@@ -29,13 +29,14 @@ output_path = "data/curated/orders_fact"
 if os.path.exists(output_path):
     shutil.rmtree(output_path)
 
-# Write partitioned
+# Write partitioned (Polars native partitioned writer; mkdir=True creates the
+# target dir and intermediate "year=YYYY/month=MM/" subdirs)
 curated_df.write_parquet(
     output_path,
     partition_by=["year", "month"],
-    use_pyarrow=True,
     compression="zstd",  # Better than snappy for analytics
-    statistics=True      # Enable Parquet statistics for pruning
+    statistics=True,     # Enabled by default; shown here for clarity
+    mkdir=True,
 )
 
 # Add trailing slash for display
