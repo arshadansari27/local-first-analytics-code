@@ -68,7 +68,7 @@ make staging         # Staging environment
 
 ### Services
 
-- **Analytics**: Python 3.11 + DuckDB + Polars + PyArrow
+- **Analytics**: Python 3.12 + DuckDB + Polars + PyArrow
 - **MinIO**: S3-compatible storage (no cloud costs)
 - **Prefect**: Workflow orchestration + UI
 - **Evidence**: BI dashboards

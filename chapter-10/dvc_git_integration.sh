@@ -20,26 +20,27 @@ dvc checkout
 dvc repro  # Exact same results
 
 
-# ===== Pattern 2: Lock Files for Pipelines =====
+# ===== Pattern 2: dvc.lock for Reproducible Pipelines =====
+#
+# DVC 3.x has no `dvc lock` command. Instead, `dvc repro` automatically
+# writes/updates `dvc.lock` with the checksums of every stage's deps,
+# params, and outs. Commit `dvc.lock` alongside `dvc.yaml` so anyone
+# can reproduce the exact pipeline state.
 
-# Generate lock file with exact data versions
-dvc lock dvc.yaml
-
-# This creates dvc.lock with checksums:
-# - Input data hashes
-# - Code hashes
-# - Output hashes
-
-# Commit dvc.lock -> anyone can reproduce exactly
-git add dvc.lock
+dvc repro            # runs the pipeline and writes dvc.lock
+git add dvc.yaml dvc.lock
 git commit -m "Lock pipeline for release v1.2"
+
+# To freeze a stage so `dvc repro` won't re-run it even if deps change:
+# dvc freeze <stage_name>
+# dvc unfreeze <stage_name>
 
 
 # ===== Common Patterns =====
 
 # Track partitioned directories
 dvc add data/raw/sales/
-# Creates sales.dvc pointing to directory with:
+# Creates sales.dvc pointing to a directory containing:
 # - sales/2024-01/*.parquet
 # - sales/2024-02/*.parquet
 # ...

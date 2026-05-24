@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   analytics:
-    image: python:3.11-slim
+    image: python:3.12-slim
     container_name: local-analytics
     working_dir: /workspace
     volumes:
@@ -24,7 +22,10 @@ services:
       - analytics-net
 
   minio:
-    image: minio/minio:latest
+    # MinIO is no longer publishing to Docker Hub (Oct 2025) and the
+    # repo was archived (Apr 2026). quay.io still serves the final
+    # community release in read-only mode.
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: local-minio
     ports:
       - "9000:9000"  # S3 API

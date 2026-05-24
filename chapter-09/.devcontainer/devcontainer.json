@@ -15,10 +15,14 @@
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python3",
-        "python.linting.enabled": true,
-        "python.linting.ruffEnabled": true,
-        "python.formatting.provider": "black",
         "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit"
+          }
+        },
         "files.watcherExclude": {
           "**/.git/objects/**": true,
           "**/data/**": true
@@ -35,7 +39,7 @@
     "9001": {"label": "MinIO Console"}
   },
 
-  "postCreateCommand": "pip install -e . && echo '[OK] Dev environment ready'",
+  "postCreateCommand": "echo '[OK] Dev environment ready'",
 
   "remoteUser": "root"
 }

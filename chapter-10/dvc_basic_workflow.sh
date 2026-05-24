@@ -31,7 +31,7 @@ git commit -m "Sales data - Q4 update"
 
 # Reproduce a specific commit
 # Teammate wants to reproduce your Q3 report
-git checkout <q3-commit-hash>
+git checkout "$Q3_COMMIT_HASH"  # set this to the commit SHA you want
 dvc checkout  # Pulls the exact data versions from that commit
 
 # Now data/ matches the exact state from Q3

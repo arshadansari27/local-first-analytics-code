@@ -1,7 +1,11 @@
 # LakeFS + MinIO Docker Compose Setup
 # Chapter 10: Version Control for Data
+#
+# Boots a self-contained MinIO + lakeFS stack on localhost.
+# After `docker compose up -d`, open http://localhost:8000 and run the
+# lakeFS setup wizard, then create a repository named `analytics-lake`
+# with storage namespace `s3://lakefs-data/` (the MinIO bucket below).
 
-version: '3.8'
 services:
   minio:
     image: minio/minio
@@ -15,16 +19,36 @@ services:
     volumes:
       - minio_data:/data
 
+  # Creates the lakefs-data bucket on first start, so lakeFS has
+  # somewhere to write its blockstore.
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >-
+      /bin/sh -c "
+      sleep 3 &&
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb -p local/lakefs-data || true
+      "
+
   lakefs:
     image: treeverse/lakefs:latest
     ports:
       - "8000:8000"
-    environment:
-      - LAKEFS_DATABASE_TYPE=local
-      - LAKEFS_BLOCKSTORE_TYPE=s3
-      - LAKEFS_BLOCKSTORE_S3_ENDPOINT=http://minio:9000
     depends_on:
       - minio
+      - minio-init
+    environment:
+      LAKEFS_DATABASE_TYPE: local
+      LAKEFS_BLOCKSTORE_TYPE: s3
+      LAKEFS_BLOCKSTORE_S3_ENDPOINT: http://minio:9000
+      LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE: "true"
+      LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: minioadmin
+      LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: minioadmin
+      # Required: encrypts auth tokens. Change before any non-local use.
+      LAKEFS_AUTH_ENCRYPT_SECRET_KEY: "change-me-in-prod"
+      LAKEFS_LOGGING_LEVEL: INFO
 
 volumes:
   minio_data:
