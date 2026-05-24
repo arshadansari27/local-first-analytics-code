@@ -30,11 +30,14 @@ def prepare_for_matching(df: pl.DataFrame, id_col: str) -> pl.DataFrame:
         (pl.col("amount") * 100).round(0).cast(pl.Int64).alias("amount_cents"),
         # Extract date for exact day matching
         pl.col("timestamp").dt.date().alias("date"),
-        # Time as seconds since midnight (for fuzzy match)
+        # Time as seconds since midnight (for fuzzy match).
+        # dt.hour/minute/second return Int8 in Polars 1.x. Multiplying
+        # by 3600 silently overflows Int16 (max 32767) for any hour >= 9,
+        # so cast to Int32 first.
         (
-            pl.col("timestamp").dt.hour() * 3600 +
-            pl.col("timestamp").dt.minute() * 60 +
-            pl.col("timestamp").dt.second()
+            pl.col("timestamp").dt.hour().cast(pl.Int32) * 3600 +
+            pl.col("timestamp").dt.minute().cast(pl.Int32) * 60 +
+            pl.col("timestamp").dt.second().cast(pl.Int32)
         ).alias("time_seconds")
     ])
 
@@ -124,9 +127,19 @@ def validate_reconciliation(
     """
     results = []
 
-    # Rule 1: Total matched amounts should equal
-    bank_matched_total = matches_df.select(pl.col("amount").sum())[0, 0]
-    ledger_matched_total = matches_df.select(pl.col("amount").sum())[0, 0]
+    # Rule 1: Bank-side and ledger-side totals of the matched pairs
+    # must agree to within a cent. Pull each side from its *source*
+    # frame (bank_df / ledger_df) — otherwise the rule is tautological.
+    matched_bank_ids = matches_df.select("bank_id")
+    matched_ledger_ids = matches_df.select("ledger_id")
+    bank_matched_total = (
+        bank_df.join(matched_bank_ids, on="bank_id", how="inner")
+        .select(pl.col("amount").sum())[0, 0]
+    )
+    ledger_matched_total = (
+        ledger_df.join(matched_ledger_ids, on="ledger_id", how="inner")
+        .select(pl.col("amount").sum())[0, 0]
+    )
 
     rule1_pass = abs(bank_matched_total - ledger_matched_total) < 0.01
     results.append((
@@ -139,7 +152,7 @@ def validate_reconciliation(
     bank_dups = (
         matches_df
         .group_by("bank_id")
-        .agg(pl.count().alias("match_count"))
+        .agg(pl.len().alias("match_count"))
         .filter(pl.col("match_count") > 1)
     )
 

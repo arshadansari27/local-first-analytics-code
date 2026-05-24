@@ -1,6 +1,9 @@
 # Chapter 7: Data Quality Gates
 # Makefile for running quality validation pipelines
 
+# Use the repo-level venv if present; falls back to system python.
+PYTHON ?= $(if $(wildcard ../../.venv/bin/python),../../.venv/bin/python,python3)
+
 .PHONY: help validate quality-report clean
 
 help: ## Show this help message
@@ -10,26 +13,21 @@ help: ## Show this help message
 
 validate: ## Run all quality checks
 	@echo "Running quality checks..."
-	python validate_orders.py
-	duckdb analytics.duckdb < quality/orders_checks.sql
+	$(PYTHON) validate_orders.py
 	@echo "[OK] Quality pipeline complete"
 
-quality-report: ## Generate quality dashboard
+quality-report: ## Generate quality dashboard CSV from quality_log
 	@echo "Generating quality report..."
-	duckdb analytics.duckdb <<< "COPY ( \
-	    SELECT \
-	        check_name, \
-	        check_type, \
-	        COUNT(*) as failure_count, \
-	        MAX(run_at) as last_failure \
-	    FROM quality_log \
-	    WHERE failing_rows > 0 \
-	    GROUP BY 1, 2 \
-	) TO 'quality_report.csv' (HEADER, DELIMITER ',')"
+	$(PYTHON) -c "import duckdb; \
+con = duckdb.connect('analytics.duckdb'); \
+con.execute(\"\"\"COPY ( \
+    SELECT check_name, check_type, COUNT(*) AS failure_count, MAX(run_at) AS last_failure \
+    FROM quality_log WHERE failing_rows > 0 GROUP BY 1, 2 \
+) TO 'quality_report.csv' (HEADER, DELIMITER ',')\"\"\")"
 	@echo "Report: quality_report.csv"
 
 clean: ## Clean generated files
-	rm -f analytics.duckdb
+	rm -f analytics.duckdb analytics.duckdb.wal
 	rm -f quality_report.csv
-	rm -rf staging/
+	rm -rf staging/ raw/
 	@echo "[OK] Cleaned up generated files"

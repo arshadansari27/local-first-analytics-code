@@ -38,7 +38,9 @@ def example_1_sql_to_transforms():
         "event_date": [datetime(2024, 10, 1).date()] * 9,
     })
 
-    # DuckDB: Complex window functions (LAG to get previous event time)
+    # DuckDB: Complex window functions (LAG to get previous event time).
+    # `to_arrow_table()` returns a zero-copy `pyarrow.Table`. (Older code
+    # used `fetch_arrow_table()`; that name is deprecated.)
     con = duckdb.connect()
     arrow_table = con.execute("""
         SELECT
@@ -51,7 +53,7 @@ def example_1_sql_to_transforms():
             ) as prev_event_time
         FROM events
         WHERE event_date = '2024-10-01'
-    """).fetch_arrow_table()
+    """).to_arrow_table()
 
     print("Step 1: DuckDB executed window function")
     print(f"  Returned {len(arrow_table)} rows via Arrow\n")
@@ -98,7 +100,8 @@ def example_2_etl_to_serving():
     """
     print("=== Pattern 2: Polars ETL -> DuckDB Serving ===\n")
 
-    # Create output directory
+    # Create output directories
+    Path("data/raw").mkdir(parents=True, exist_ok=True)
     Path("data/curated").mkdir(parents=True, exist_ok=True)
 
     # Create sample customer data with issues

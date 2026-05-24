@@ -44,7 +44,7 @@ aggregate_contract = DataContract(
     ],
     post_conditions=[
         lambda df: check_row_count_positive(df),
-        lambda df: check_no_nulls_in_key(df, "date"),
+        lambda df: check_no_nulls_in_key(df, "order_date"),
         lambda df: (df["revenue"] >= 0).all(),  # no negative daily revenue
     ]
 )

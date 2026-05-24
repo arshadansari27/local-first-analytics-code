@@ -1,6 +1,11 @@
 """
 Download NYC Taxi Trip Data (2023)
-Downloads 12 monthly Parquet files from NYC TLC and converts to optimized format.
+Downloads monthly Parquet files from NYC TLC and converts to optimized format.
+
+NOTE: To keep this chapter runnable on a laptop with limited bandwidth, the
+demo defaults to a SINGLE month (January 2023, ~3M rows, ~48MB). Set
+MONTHS = range(1, 13) to download the full year (~38M rows, ~600MB) and
+reproduce the benchmarks discussed in the chapter text.
 """
 import duckdb
 from pathlib import Path
@@ -11,9 +16,10 @@ con = duckdb.connect()
 # Create output directory
 Path("data/raw/taxi").mkdir(parents=True, exist_ok=True)
 
-# Download all 2023 monthly files and convert to Parquet
-# This grabs ~50M rows total
-for month in range(1, 13):
+# Demo default: just January. Expand to range(1, 13) for the full 2023 year.
+MONTHS = [1]
+
+for month in MONTHS:
     url = (
         f"https://d37ci6vzurychx.cloudfront.net/trip-data/"
         f"yellow_tripdata_2023-{month:02d}.parquet"
@@ -30,5 +36,5 @@ for month in range(1, 13):
 
 con.close()
 
-print("\n[COMPLETE] All 12 months downloaded")
+print(f"\n[COMPLETE] Downloaded {len(MONTHS)} month(s)")
 print("Data saved to: data/raw/taxi/")

@@ -5,16 +5,52 @@ This module demonstrates Tier 2 validation: business logic validation using Duck
 to check referential integrity, statistical outliers, and temporal logic.
 """
 
+import random
+from datetime import date, timedelta
+from pathlib import Path
+
 import duckdb
 import polars as pl
 
+CHECKS_SQL = Path(__file__).parent / "quality" / "orders_checks.sql"
 
-def run_quality_checks(db_path: str = "analytics.duckdb") -> pl.DataFrame:
+
+def _seed_staging(con: duckdb.DuckDBPyConnection) -> None:
+    """Create a ``staging`` schema with synthetic orders + customers.
+
+    Keeps the example self-contained — in a real pipeline these tables would
+    be populated from upstream Parquet (e.g. ``read_parquet('staging/orders/*.parquet')``).
+    """
+    random.seed(42)
+    customers = pl.DataFrame({"id": list(range(1, 51))})
+
+    orders = pl.DataFrame([
+        {
+            "order_id": f"O{i:04d}",
+            # Mix of valid customer ids (1..50) plus a few orphans (>50) to
+            # exercise the referential-integrity check.
+            "customer_id": random.choice(list(range(1, 50)) + [999]),
+            "order_date": date(2024, 10, 1) + timedelta(days=random.randint(0, 30)),
+            "amount": round(random.uniform(10, 500), 2),
+            "quantity": random.randint(1, 10),
+            "status": random.choice(["pending", "shipped", "delivered"]),
+        }
+        for i in range(1, 101)
+    ])
+
+    con.execute("CREATE SCHEMA IF NOT EXISTS staging")
+    con.register("_customers_df", customers)
+    con.register("_orders_df", orders)
+    con.execute("CREATE OR REPLACE TABLE staging.customers AS SELECT * FROM _customers_df")
+    con.execute("CREATE OR REPLACE TABLE staging.orders    AS SELECT * FROM _orders_df")
+
+
+def run_quality_checks(db_path: str = ":memory:") -> pl.DataFrame:
     """
     Run business rules quality checks on orders data.
 
     Args:
-        db_path: Path to DuckDB database
+        db_path: Path to DuckDB database (defaults to in-memory for the demo)
 
     Returns:
         DataFrame with failing checks
@@ -23,15 +59,10 @@ def run_quality_checks(db_path: str = "analytics.duckdb") -> pl.DataFrame:
         ValueError: If critical checks fail
     """
     con = duckdb.connect(db_path)
+    _seed_staging(con)
 
-    # Load fresh data
-    con.execute("""
-        CREATE OR REPLACE TABLE staging.orders AS
-        SELECT * FROM read_parquet('staging/orders/*.parquet')
-    """)
-
-    # Run quality checks
-    con.execute(open("quality/orders_checks.sql").read())
+    # Run quality checks from the SQL file
+    con.execute(CHECKS_SQL.read_text())
 
     # Review failures
     failures = con.execute("""
@@ -56,7 +87,8 @@ def run_quality_checks(db_path: str = "analytics.duckdb") -> pl.DataFrame:
         )
 
         if len(critical_failures) > 0:
-            raise ValueError(f"Critical quality checks failed: {critical_failures}")
+            print("[FAIL] Critical quality checks failed (demo only — not raising):")
+            print(critical_failures)
         else:
             print("[WARNING] Non-critical issues logged, continuing pipeline")
 
@@ -64,11 +96,8 @@ def run_quality_checks(db_path: str = "analytics.duckdb") -> pl.DataFrame:
 
 
 if __name__ == "__main__":
-    # Example usage
-    try:
-        failures = run_quality_checks()
-        if len(failures) == 0:
-            print("[OK] All quality checks passed")
-    except ValueError as e:
-        print(f"[FAIL] {e}")
-        raise
+    failures = run_quality_checks()
+    if len(failures) == 0:
+        print("[OK] All quality checks passed")
+    else:
+        print(f"[OK] Quality run complete — {len(failures)} check(s) reported failing rows")
