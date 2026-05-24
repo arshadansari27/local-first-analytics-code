@@ -1,18 +1,21 @@
-version: '3.8'
-
-# Production deployment with Caddy reverse proxy
+# Production deployment: Evidence (built statically and served by Caddy)
+# + Metabase + Caddy reverse proxy with automatic HTTPS.
+#
+# Evidence is most reliably deployed in production as a static build served by
+# any static host. Here we build inside the `evidencedev/devenv` image and let
+# Caddy serve the resulting `./build` directory.
 
 services:
-  evidence:
-    image: evidence-dev/evidence:latest
+  evidence-build:
+    image: evidencedev/devenv:latest
     volumes:
-      - ../evidence:/evidence
+      - ../evidence:/evidence-workspace
       - ../../data:/data
-    ports:
-      - "80:3000"
-    restart: unless-stopped
     environment:
-      - NODE_ENV=production
+      - HOST=0.0.0.0
+    # Build static site then exit. Run on demand: `docker compose run evidence-build`.
+    command: ["sh", "-lc", "cd /evidence-workspace && npm install && npm run sources && npm run build"]
+    profiles: ["build"]
 
   metabase:
     image: metabase/metabase:latest
@@ -24,16 +27,17 @@ services:
     restart: unless-stopped
     environment:
       - MB_DB_FILE=/metabase-data/metabase.db
-      - MB_SITE_URL=http://your-vps-ip:3001
+      - MB_SITE_URL=https://metabase.yourdomain.com
       - MB_JETTY_HOST=0.0.0.0
 
   caddy:
     image: caddy:latest
     ports:
-      - "443:443"
       - "80:80"
+      - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
+      - ../evidence/build:/srv/evidence:ro
       - caddy-data:/data
       - caddy-config:/config
     restart: unless-stopped

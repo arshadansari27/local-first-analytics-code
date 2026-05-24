@@ -1,34 +1,32 @@
-version: '3.8'
+# Local BI stack: Evidence.dev dev server + Metabase
+#
+# Notes on the Evidence container:
+#   `evidencedev/devenv` is the official Evidence development environment image.
+#   It expects an Evidence project mounted at /evidence-workspace and (on first
+#   run inside an empty workspace) bootstraps from the official template.
+#   See https://github.com/evidence-dev/docker-devenv for details.
 
 services:
-  # ────────────────────────────────────────
+  # ----------------------------------------
   # Evidence.dev (Reports as Code)
-  # ────────────────────────────────────────
+  # ----------------------------------------
   evidence:
-    image: node:18-alpine
+    image: evidencedev/devenv:latest
     container_name: local-evidence
-    working_dir: /evidence
     ports:
       - "3000:3000"
     volumes:
-      - ../evidence:/evidence
+      - ../evidence:/evidence-workspace
       - ../../data:/data
-    command: |
-      sh -c "
-      if [ ! -f package.json ]; then
-        echo '[INFO] Initializing Evidence project...'
-        npm init -y
-        npm install @evidence-dev/evidence
-      fi
-      npm run dev -- --host 0.0.0.0
-      "
+    environment:
+      - HOST=0.0.0.0
     networks:
       - bi-net
     restart: unless-stopped
 
-  # ────────────────────────────────────────
+  # ----------------------------------------
   # Metabase (Ad-hoc Analytics)
-  # ────────────────────────────────────────
+  # ----------------------------------------
   metabase:
     image: metabase/metabase:latest
     container_name: local-metabase

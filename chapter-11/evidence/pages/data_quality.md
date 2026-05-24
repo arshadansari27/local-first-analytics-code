@@ -9,7 +9,10 @@ SELECT
     table_name,
     MAX(updated_at) as last_update,
     COUNT(*) as row_count,
-    ROUND((CURRENT_TIMESTAMP - MAX(updated_at)) / 3600, 1) as hours_since_update
+    ROUND(
+        EPOCH(CURRENT_TIMESTAMP - MAX(updated_at)) / 3600.0,
+        1
+    ) as hours_since_update
 FROM (
     SELECT 'orders' as table_name, updated_at FROM curated.orders
     UNION ALL

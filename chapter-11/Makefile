@@ -5,18 +5,25 @@
 help: ## Display this help message
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-setup: ## Install Evidence dependencies
-	@echo "[INFO] Setting up Evidence..."
-	cd evidence && npm init -y && npm install @evidence-dev/evidence
-	@echo "[OK] Evidence ready"
+setup: ## Bootstrap an Evidence project (template + npm install)
+	@echo "[INFO] Bootstrapping Evidence template into evidence/ ..."
+	@if [ ! -f evidence/package.json ]; then \
+		npx --yes degit evidence-dev/template evidence-tmp && \
+		cp -R evidence-tmp/. evidence/ && \
+		rm -rf evidence-tmp; \
+	else \
+		echo "[INFO] evidence/package.json exists; skipping template copy"; \
+	fi
+	cd evidence && npm install
+	@echo "[OK] Evidence ready (sources/ and pages/ are preserved)"
 
 ##@ BI Services
 
-evidence: ## Start Evidence dev server
-	cd evidence && npm run dev
+evidence: ## Start Evidence dev server (runs `sources` first)
+	cd evidence && npm run sources && npm run dev
 
-evidence-build: ## Build static Evidence site
-	cd evidence && npm run build
+evidence-build: ## Build static Evidence site to evidence/build/
+	cd evidence && npm run sources && npm run build
 	@echo "[OK] Static site in evidence/build/"
 
 metabase: ## Start Metabase in Docker

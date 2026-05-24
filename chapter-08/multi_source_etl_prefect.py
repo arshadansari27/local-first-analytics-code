@@ -6,7 +6,7 @@ Demonstrates parallel extraction with retries and caching.
 """
 
 from prefect import flow, task
-from prefect.tasks import task_input_hash
+from prefect.cache_policies import INPUTS
 from datetime import timedelta
 import httpx
 import polars as pl
@@ -88,7 +88,7 @@ def fetch_inventory_minio() -> str:
     return "data/raw/inventory.parquet"
 
 
-@task(cache_key_fn=task_input_hash, cache_expiration=timedelta(hours=24))
+@task(cache_policy=INPUTS, cache_expiration=timedelta(hours=24))
 def clean_customers(customers_csv: str) -> str:
     """Deduplicate and validate customers."""
 

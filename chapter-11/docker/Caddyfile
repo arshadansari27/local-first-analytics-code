@@ -1,9 +1,13 @@
-# Caddy Reverse Proxy Configuration
+# Caddy reverse proxy with automatic HTTPS.
+# Evidence is served as a static build out of /srv/evidence;
+# Metabase is reverse-proxied to the metabase service in compose.
 
 evidence.yourdomain.com {
-    reverse_proxy localhost:3000
+    root * /srv/evidence
+    file_server
+    try_files {path} {path}/ /index.html
 }
 
 metabase.yourdomain.com {
-    reverse_proxy localhost:3001
+    reverse_proxy metabase:3000
 }

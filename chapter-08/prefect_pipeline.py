@@ -10,7 +10,7 @@ Demonstrates:
 """
 
 from prefect import flow, task
-from prefect.tasks import task_input_hash
+from prefect.cache_policies import INPUTS
 from datetime import timedelta
 import polars as pl
 import duckdb
@@ -20,7 +20,7 @@ from pathlib import Path
 @task(
     retries=3,
     retry_delay_seconds=60,
-    cache_key_fn=task_input_hash,
+    cache_policy=INPUTS,
     cache_expiration=timedelta(hours=1)
 )
 def extract_api_data(endpoint: str) -> str:
@@ -125,19 +125,18 @@ def parallel_ingestion():
 
 
 def create_deployment():
-    """Create deployment with cron schedule."""
-    from prefect.deployments import Deployment
-    from prefect.server.schemas.schedules import CronSchedule
+    """Serve the flow on a cron schedule (Prefect 3.x).
 
-    deployment = Deployment.build_from_flow(
-        flow=daily_etl_flow,
+    In Prefect 3, ``Deployment.build_from_flow`` was removed. The simplest
+    local-first replacement is ``flow.serve(...)``, which blocks the current
+    process and polls for scheduled runs (no separate worker/agent needed).
+    For deployments that target a work pool, use ``flow.deploy(...)``.
+    """
+    daily_etl_flow.serve(
         name="daily-etl-prod",
-        schedule=CronSchedule(cron="0 6 * * *", timezone="America/New_York"),
-        work_queue_name="local"
+        cron="0 6 * * *",
+        timezone="America/New_York",
     )
-
-    deployment.apply()
-    print("[OK] Deployment created. Start agent with: prefect agent start -q local")
 
 
 if __name__ == "__main__":

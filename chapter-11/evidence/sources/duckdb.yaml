@@ -1,3 +1,0 @@
-name: local_analytics
-type: duckdb
-filename: ../../data/curated/analytics.duckdb

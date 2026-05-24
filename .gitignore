@@ -1,5 +1,22 @@
-*.parquet 
+*.parquet
 *.pdf
 *.csv
 *.gz
 README.md
+
+# Generated data and indexes
+**/data/raw/
+**/data/staging/
+**/data/curated/
+*.duckdb
+*.duckdb.wal
+*.db
+*.sqlite
+
+# Chapter 12: AI artifacts
+chapter-12/rag_index/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/

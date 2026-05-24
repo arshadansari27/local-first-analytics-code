@@ -6,7 +6,7 @@ Daily ETL flow with automatic retries, caching, and parallel execution.
 """
 
 from prefect import flow, task
-from prefect.tasks import task_input_hash
+from prefect.cache_policies import INPUTS
 from datetime import timedelta
 import polars as pl
 import duckdb
@@ -16,7 +16,7 @@ import httpx
 @task(
     retries=3,
     retry_delay_seconds=60,
-    cache_key_fn=task_input_hash,
+    cache_policy=INPUTS,
     cache_expiration=timedelta(hours=1)
 )
 def extract_api_data(endpoint: str) -> str:

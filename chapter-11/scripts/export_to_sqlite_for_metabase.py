@@ -2,35 +2,53 @@
 """
 Export DuckDB to SQLite for Metabase.
 
-Metabase doesn't natively support DuckDB, so we export to SQLite format.
+Metabase has no native DuckDB driver, so we copy the curated tables into a
+SQLite file via DuckDB's `sqlite` extension. The chapter text walks through
+why this is the easiest path; DuckDB's `EXPORT DATABASE` only supports CSV
+and Parquet formats, so it cannot produce a SQLite file directly.
 """
 
-import duckdb
 from pathlib import Path
 
+import duckdb
 
-def export_duckdb_to_sqlite():
-    """Export DuckDB database to SQLite for Metabase compatibility."""
+DUCKDB_PATH = Path("data/curated/analytics.duckdb")
+SQLITE_PATH = Path("data/curated/metabase_export.db")
 
-    duckdb_path = 'data/curated/analytics.duckdb'
-    sqlite_export_dir = 'data/curated/metabase_export'
+# Tables to mirror into SQLite. Adjust to match your warehouse.
+TABLES = ("customers", "products", "orders", "order_items", "daily_metrics")
 
-    # Check if DuckDB file exists
-    if not Path(duckdb_path).exists():
-        print(f"[ERROR] DuckDB file not found: {duckdb_path}")
+
+def export_duckdb_to_sqlite() -> None:
+    """Mirror curated DuckDB tables into a SQLite file for Metabase."""
+
+    if not DUCKDB_PATH.exists():
+        print(f"[ERROR] DuckDB file not found: {DUCKDB_PATH}")
         print("[INFO] Create the DuckDB database first with your ETL pipeline")
         return
 
-    print(f"[INFO] Exporting {duckdb_path} to SQLite...")
+    SQLITE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if SQLITE_PATH.exists():
+        SQLITE_PATH.unlink()
 
-    # Connect and export
-    con = duckdb.connect(duckdb_path)
+    print(f"[INFO] Exporting {DUCKDB_PATH} -> {SQLITE_PATH} ...")
 
-    # Export entire database to SQLite format
-    con.execute(f"EXPORT DATABASE '{sqlite_export_dir}' (FORMAT SQLITE);")
+    con = duckdb.connect(str(DUCKDB_PATH))
+    con.execute("INSTALL sqlite; LOAD sqlite;")
+    con.execute(f"ATTACH '{SQLITE_PATH}' AS mb (TYPE SQLITE);")
 
-    print(f"[OK] Exported to {sqlite_export_dir}")
-    print(f"[OK] Use {sqlite_export_dir}.db in Metabase")
+    for table in TABLES:
+        try:
+            con.execute(f"CREATE TABLE mb.{table} AS SELECT * FROM curated.{table};")
+            print(f"  [OK] {table}")
+        except duckdb.CatalogException as exc:
+            print(f"  [SKIP] {table}: {exc}")
+
+    con.execute("DETACH mb;")
+    con.close()
+
+    print(f"[OK] Wrote {SQLITE_PATH}")
+    print(f"[OK] In Metabase, add a SQLite database pointing at: {SQLITE_PATH}")
 
 
 if __name__ == "__main__":

@@ -125,20 +125,10 @@ def cleaned_events_v2(context: AssetExecutionContext) -> pl.DataFrame:
     return validated_df
 
 
-# Resource configuration
-class LocalDuckDB:
-    def __init__(self, database_path: str = "analytics.duckdb"):
-        self.database_path = database_path
-
-    def get_connection(self):
-        import duckdb
-        return duckdb.connect(self.database_path)
-
-
-# Definitions
+# Definitions — wire assets to resources.
 defs = Definitions(
     assets=[raw_events, cleaned_events, daily_metrics],
     resources={
-        "duckdb": DuckDBResource(database="data/analytics.duckdb")
-    }
+        "duckdb": DuckDBResource(database="data/analytics.duckdb"),
+    },
 )

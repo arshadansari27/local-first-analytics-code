@@ -1,0 +1,8 @@
+# Evidence v40+ data source for our local DuckDB warehouse.
+# Place this file at: sources/<source_name>/connection.yaml
+# `npm run sources` reads this and materialises query results into the build.
+
+name: local_analytics
+type: duckdb
+options:
+  filename: ../../../data/curated/analytics.duckdb

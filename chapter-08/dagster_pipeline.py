@@ -130,29 +130,24 @@ def cleaned_events_v2(context: AssetExecutionContext) -> pl.DataFrame:
     return validated_df
 
 
-# Resource Configuration
-class LocalDuckDB(DuckDBResource):
-    database_path: str = "data/analytics.duckdb"
-
-    def get_connection(self):
-        import duckdb
-        return duckdb.connect(self.database_path)
-
-
-# Definitions
+# Definitions — wire assets to the DuckDB resource.
 defs = Definitions(
     assets=[raw_events, cleaned_events, daily_metrics],
     resources={
-        "duckdb": LocalDuckDB(database="data/analytics.duckdb")
-    }
+        "duckdb": DuckDBResource(database="data/analytics.duckdb"),
+    },
 )
 
 
 if __name__ == "__main__":
     from dagster import materialize
 
-    # Materialize all assets
-    result = materialize([raw_events, cleaned_events, daily_metrics])
+    # Materialize all assets. The `daily_metrics` asset requires the
+    # `duckdb` resource, so we pass the same resource registered in `defs`.
+    result = materialize(
+        [raw_events, cleaned_events, daily_metrics],
+        resources={"duckdb": DuckDBResource(database="data/analytics.duckdb")},
+    )
 
     if result.success:
         print("[OK] All assets materialized successfully")

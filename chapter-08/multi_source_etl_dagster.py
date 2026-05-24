@@ -187,8 +187,11 @@ defs = Definitions(
 if __name__ == "__main__":
     from dagster import materialize
 
-    # Materialize all assets
-    result = materialize([raw_customers, raw_orders, raw_inventory, cleaned_customers, cleaned_orders, daily_revenue])
+    # `daily_revenue` requires the `duckdb` resource.
+    result = materialize(
+        [raw_customers, raw_orders, raw_inventory, cleaned_customers, cleaned_orders, daily_revenue],
+        resources={"duckdb": DuckDBResource(database="data/analytics.duckdb")},
+    )
 
     if result.success:
         print("[OK] All assets materialized successfully")
