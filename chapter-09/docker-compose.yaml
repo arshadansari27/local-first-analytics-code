@@ -77,7 +77,8 @@ services:
   # Evidence (BI dashboards)
   # ────────────────────────────────────────
   evidence:
-    image: node:20-alpine
+    # Node 20 went EOL on 24 Mar 2026; pin to a still-supported LTS.
+    image: node:22-alpine
     container_name: local-evidence
     working_dir: /evidence
     ports:
